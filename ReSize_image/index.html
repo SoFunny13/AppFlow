@@ -1023,21 +1023,22 @@
         const offsetX = (targetW - scaledW) / 2;
         const offsetY = (targetH - scaledH) / 2;
         ctx.drawImage(img, offsetX, offsetY, scaledW, scaledH);
-        canvas.toBlob(blob => resolve(blob), 'image/png');
+        canvas.toBlob(blob => {
+          if (!blob) return resolve(null);
+          resolve(blob);
+        }, 'image/png');
       };
+      img.onerror = () => resolve(null);
       img.src = srcUrl;
     });
   }
 
-  function resizeImage(item) {
-    return new Promise(async resolve => {
-      const { w: targetW, h: targetH } = getTargetSize();
-      const blob = await resizeBlobToTarget(item.originalUrl, targetW, targetH);
-      item.resizedBlob = blob;
-      if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
-      item.resizedUrl = URL.createObjectURL(blob);
-      resolve();
-    });
+  async function resizeImage(item) {
+    const { w: targetW, h: targetH } = getTargetSize();
+    const blob = await resizeBlobToTarget(item.originalUrl, targetW, targetH);
+    item.resizedBlob = blob;
+    if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
+    item.resizedUrl = URL.createObjectURL(blob);
   }
 
   async function resizeAll() {
@@ -1218,7 +1219,16 @@
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const choice = data.choices?.[0];
+    if (!choice?.message?.content) {
+      throw new Error('Unexpected API response structure');
+    }
+    let result;
+    try {
+      result = JSON.parse(choice.message.content);
+    } catch (parseErr) {
+      throw new Error(`Failed to parse API response: ${parseErr.message}`);
+    }
     log(`Found ${result.texts.length} text block(s) in "${item.name}"`, 'success');
     return result;
   }
@@ -1273,7 +1283,16 @@ Return JSON:
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const choice = data.choices?.[0];
+    if (!choice?.message?.content) {
+      throw new Error('Unexpected API response structure');
+    }
+    let result;
+    try {
+      result = JSON.parse(choice.message.content);
+    } catch (parseErr) {
+      throw new Error(`Failed to parse translation response: ${parseErr.message}`);
+    }
     log(`Translation ready: ${result.translations.map(t => `"${t.translated}"`).join(', ')}`, 'success');
     return result;
   }
@@ -1341,11 +1360,14 @@ Return JSON:
   async function createSizeVariants(rawBlob, sizes) {
     const rawUrl = URL.createObjectURL(rawBlob);
     const variants = [];
-    for (const size of sizes) {
-      const resizedBlob = await resizeBlobToTarget(rawUrl, size.w, size.h);
-      variants.push({ sizeValue: size.value, sizeLabel: size.label, w: size.w, h: size.h, blob: resizedBlob, url: URL.createObjectURL(resizedBlob) });
+    try {
+      for (const size of sizes) {
+        const resizedBlob = await resizeBlobToTarget(rawUrl, size.w, size.h);
+        variants.push({ sizeValue: size.value, sizeLabel: size.label, w: size.w, h: size.h, blob: resizedBlob, url: URL.createObjectURL(resizedBlob) });
+      }
+    } finally {
+      URL.revokeObjectURL(rawUrl);
     }
-    URL.revokeObjectURL(rawUrl);
     return variants;
   }
 
