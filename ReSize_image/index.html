@@ -1018,14 +1018,21 @@
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, targetW, targetH);
-        const scale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
-        const scaledW = img.naturalWidth * scale;
-        const scaledH = img.naturalHeight * scale;
-        const offsetX = (targetW - scaledW) / 2;
-        const offsetY = (targetH - scaledH) / 2;
-        ctx.drawImage(img, offsetX, offsetY, scaledW, scaledH);
+
+        // 1) Размытый фон (cover): заполняет весь холст
+        const coverScale = Math.max(targetW / img.naturalWidth, targetH / img.naturalHeight);
+        const covW = img.naturalWidth * coverScale;
+        const covH = img.naturalHeight * coverScale;
+        ctx.filter = 'blur(20px)';
+        ctx.drawImage(img, (targetW - covW) / 2, (targetH - covH) / 2, covW, covH);
+
+        // 2) Чёткая картинка (fit): целиком поверх
+        ctx.filter = 'none';
+        const fitScale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
+        const fitW = img.naturalWidth * fitScale;
+        const fitH = img.naturalHeight * fitScale;
+        ctx.drawImage(img, (targetW - fitW) / 2, (targetH - fitH) / 2, fitW, fitH);
+
         canvas.toBlob(blob => {
           if (!blob) return resolve(null);
           resolve(blob);
