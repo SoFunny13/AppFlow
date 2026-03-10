@@ -625,7 +625,7 @@
           <option value="1260x2736">iPhone 6.1" Pro — 1260 x 2736</option>
           <option value="1179x2556">iPhone 6.1" — 1179 x 2556</option>
           <option value="2048x2732">iPad Pro — 2048 x 2732</option>
-          <option value="360x800">360×800 — 360 x 800</option>
+          <option value="800x360">800×360 — 800 x 360</option>
           <option value="custom">Custom</option>
         </select>
       </div>
@@ -1019,19 +1019,7 @@
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
-        // 1) Размытый фон (cover): заполняет весь холст
-        const coverScale = Math.max(targetW / img.naturalWidth, targetH / img.naturalHeight);
-        const covW = img.naturalWidth * coverScale;
-        const covH = img.naturalHeight * coverScale;
-        ctx.filter = 'blur(20px)';
-        ctx.drawImage(img, (targetW - covW) / 2, (targetH - covH) / 2, covW, covH);
-
-        // 2) Чёткая картинка (fit): целиком поверх
-        ctx.filter = 'none';
-        const fitScale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
-        const fitW = img.naturalWidth * fitScale;
-        const fitH = img.naturalHeight * fitScale;
-        ctx.drawImage(img, (targetW - fitW) / 2, (targetH - fitH) / 2, fitW, fitH);
+        ctx.drawImage(img, 0, 0, targetW, targetH);
 
         canvas.toBlob(blob => {
           if (!blob) return resolve(null);
