@@ -1018,7 +1018,9 @@
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        const scale = Math.max(targetW / img.naturalWidth, targetH / img.naturalHeight);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, targetW, targetH);
+        const scale = Math.min(targetW / img.naturalWidth, targetH / img.naturalHeight);
         const scaledW = img.naturalWidth * scale;
         const scaledH = img.naturalHeight * scale;
         const offsetX = (targetW - scaledW) / 2;
